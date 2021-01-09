@@ -1,0 +1,2 @@
+pycoingecko~=1.4.0
+discord.py~=1.6.0
