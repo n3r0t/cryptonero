@@ -5,18 +5,13 @@ from discord.ext import commands
 
 cg = CoinGeckoAPI()
 
-# f = open('ethhisto.txt',"w")
-# f.write(json.dumps(cg.get_coin_by_id(eth)))
-# f.close()
-
-
 bot = commands.Bot(command_prefix='*', description="crytponero")
 coinlist = cg.get_coins_list()
 
 
 @bot.event
 async def on_ready():
-    print(f'Logged in as {bot.user.name.upper()}#{bot.user.discriminator} ({bot.user.id}) - discord.py {discord.__version__}')
+    print(f'Logged in as {bot.user.name.upper()}#{bot.user.discriminator} ({bot.user.id})')
     print("------------")
 
 
@@ -108,7 +103,6 @@ async def comm_get_embed_more(ctx,arg):
         await ctx.send(embed=embed)
     except (ValueError, TypeError) as e:
         await ctx.send(f'{e.args}')
-    pass
 
 
 bot.run(os.getenv('TOKEN'))
