@@ -2,6 +2,7 @@ import os
 from pycoingecko import CoinGeckoAPI
 import discord
 from discord.ext import commands
+from keepalive import keepalive
 
 cg = CoinGeckoAPI()
 
@@ -104,5 +105,5 @@ async def comm_get_embed_more(ctx,arg):
     except (ValueError, TypeError) as e:
         await ctx.send(f'{e.args}')
 
-
+keepalive()
 bot.run(os.getenv('TOKEN'))
