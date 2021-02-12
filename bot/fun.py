@@ -18,10 +18,15 @@ class FunCommands(commands.Cog):
             return True
 
     @commands.command(name='sadge')
-    async def fin_cest_sad_quoi(self, ctx):
+    async def fin_cest_sad_quoi(self, ctx, *arg):
         print(f'{ctx.author} est Sadge')
         await ctx.message.delete()
-        await ctx.send(content="'fin c'est sad quoi. . . ",
+        msg = "'fin c'est sad quoi. . . "
+        if arg:
+            for x in arg:
+                msg = msg + ' ' + str(x)
+
+        await ctx.send(content=f'{msg}',
                        file=discord.File('sad.png'))
         # https://cdn.betterttv.net/emote/5e0fa9d40550d42106b8a489/3x
 
