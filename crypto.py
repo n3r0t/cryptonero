@@ -9,15 +9,18 @@ from pycoingecko import CoinGeckoAPI
 
 locale.setlocale(locale.LC_ALL, 'en_US')
 
-async def isNumber(nb):
+
+def isNumber(nb):
     try:
         float(nb)
         return True
     except ValueError:
         return False
 
-async def localizeNB(nb):
+
+def localizeNB(nb):
     return locale.format_string("%d", nb, grouping=True)
+
 
 class CryptoCommands(commands.Cog):
     def __init__(self, bot):
@@ -69,78 +72,74 @@ class CryptoCommands(commands.Cog):
             await ctx.send("Not enough parameters provided (2 required).")
             return
         print(f'{ctx.author} asked {ctx.command} with {args[0]}/{args[1]}')
-        try:
-            if not str(args[0]).isalpha():
-                await ctx.send("Parameter 1 has to be a string.")
-                return
-            if not await isNumber(args[1]):
-                await ctx.send("Parameter 2 has to be number.")
-                return
 
-            coin = {}
-            for x in coinlist:
-                for s in x.values():
-                    r = re.search(f'(?<!\S){args[0]}(?!\S)', s)
-                    if r is not None:
-                        coin = cg.get_coin_by_id(x['id'])
+        if not str(args[0]).isalpha():
+            await ctx.send("Parameter 1 has to be a string.")
+            return
+        if not isNumber(args[1]):
+            await ctx.send("Parameter 2 has to be number.")
+            return
 
-            if len(coin) == 0:
-                await ctx.send(f"Can not find requested crypto.")
+        coin = {}
+        for x in coinlist:
+            for s in x.values():
+                r = re.search(f'(?<!\S){args[0]}(?!\S)', s)
+                if r is not None:
+                    coin = cg.get_coin_by_id(x['id'])
 
-            embed = discord.Embed(
-                title=f"{coin['name']} simulated market cap (USD)",
-                color=discord.Color.blurple(),
-                url=f'https://www.coingecko.com/en/coins/{coin["id"]}'
-            )
+        if len(coin) == 0:
+            await ctx.send(f"Can not find requested crypto.")
 
-            mcSimmed = coin['market_data']['circulating_supply'] * float(args[1])
-            if coin['market_data']['total_supply']:
-                mcMaxSimmed = await localizeNB(coin['market_data']['total_supply'] * float(args[1]))
-            else:
-                mcMaxSimmed = "infinite supply"
-            marketcap = coin['market_data']['market_cap']['usd']
-            # marketcap = await localizeNB(coin['market_data']['market_cap']['usd'])
+        embed = discord.Embed(
+            title=f"{coin['name']} simulated market cap (USD)",
+            color=discord.Color.blurple(),
+            url=f'https://www.coingecko.com/en/coins/{coin["id"]}'
+        )
 
-            leng = len(top300coins) - 1
-            estimatedRank = 301
-            while mcSimmed > top300coins[leng]['market_cap']:
-                leng -= 1
-                estimatedRank = top300coins[leng]['market_cap_rank']
+        mcSimmed = coin['market_data']['circulating_supply'] * float(args[1])
+        if coin['market_data']['total_supply']:
+            mcMaxSimmed = localizeNB(coin['market_data']['total_supply'] * float(args[1]))
+        else:
+            mcMaxSimmed = "infinite supply"
+        marketcap = coin['market_data']['market_cap']['usd']
+        # marketcap = localizeNB(coin['market_data']['market_cap']['usd'])
 
-            if estimatedRank == 301:
-                estimatedRank = "300+"
+        leng = len(top300coins) - 1
+        estimatedRank = 301
+        while mcSimmed > top300coins[leng]['market_cap'] and leng > 0:
+            leng -= 1
+            estimatedRank = top300coins[leng]['market_cap_rank']
 
-            mcSimmed = await localizeNB(mcSimmed)
+        if estimatedRank == 301:
+            estimatedRank = "300+"
 
-            if coin['market_data']['current_price']['usd'] < 10:
-                currentPrice = round(coin['market_data']['current_price']['usd'], 6)
-            else:
-                currentPrice = await localizeNB(coin['market_data']['current_price']['usd'])
+        mcSimmed = localizeNB(mcSimmed)
 
-            if float(args[1]) < 10:
-                simmedprice = round(float(args[1]), 6)
-            else:
-                simmedprice = await localizeNB(args[1])
+        if coin['market_data']['current_price']['usd'] < 10:
+            currentPrice = round(coin['market_data']['current_price']['usd'], 6)
+        else:
+            currentPrice = localizeNB(coin['market_data']['current_price']['usd'])
 
-            # await localizeNB(coin['market_data']['current_price']['usd'])
-            embed.set_thumbnail(url=coin['image']['small'])
-            embed.add_field(name='Current price', value=f"{currentPrice}",
-                            inline=True)
-            embed.add_field(name='Current market cap', value=f"{await localizeNB(marketcap)}", inline=True)
-            embed.add_field(name='_ _', value='_ _', inline=True)
-            embed.add_field(name='Simulated price', value=f"{simmedprice}", inline=True)
-            embed.add_field(name='Simulated market cap', value=f"{mcSimmed}", inline=True)
-            embed.add_field(name='_ _', value='_ _', inline=True)
-            embed.add_field(name='Simulated market cap with max supply', value=f"{mcMaxSimmed}", inline=False)
-            embed.add_field(name='Simulated market cap rank', value=f"{estimatedRank}", inline=False)
+        if float(args[1]) < 10:
+            simmedprice = round(float(args[1]), 6)
+        else:
+            simmedprice = localizeNB(float(args[1]))
 
-            embed.set_footer(text=f'Powered by coingecko.com')
+        # localizeNB(coin['market_data']['current_price']['usd'])
+        embed.set_thumbnail(url=coin['image']['small'])
+        embed.add_field(name='Current price', value=f"{currentPrice}",
+                        inline=True)
+        embed.add_field(name='Current market cap', value=f"{localizeNB(marketcap)}", inline=True)
+        embed.add_field(name='_ _', value='_ _', inline=True)
+        embed.add_field(name='Simulated price', value=f"{simmedprice}", inline=True)
+        embed.add_field(name='Simulated market cap', value=f"{mcSimmed}", inline=True)
+        embed.add_field(name='_ _', value='_ _', inline=True)
+        embed.add_field(name='Simulated market cap with max supply', value=f"{mcMaxSimmed}", inline=False)
+        embed.add_field(name='Simulated market cap rank', value=f"{estimatedRank}", inline=False)
 
-            await ctx.send(embed=embed)
+        embed.set_footer(text=f'Powered by coingecko.com')
 
-        except (ValueError, TypeError, IndexError) as e:
-            await ctx.send(f"{e}")
-
+        await ctx.send(embed=embed)
 
     @commands.command(name='trending')
     async def comm_get_trending(self, ctx, cg=cg):
@@ -199,12 +198,13 @@ class CryptoCommands(commands.Cog):
                     if x['market']['name'] == 'Binance':
                         binance = True
 
-            if binance == True: await ctx.send(f"{coin['name']} is avaible on Binance! :white_check_mark:")
-            else : await ctx.send(f"{coin['name']} is NOT avaible on Binance! :x:")
+            if binance == True:
+                await ctx.send(f"{coin['name']} is avaible on Binance! :white_check_mark:")
+            else:
+                await ctx.send(f"{coin['name']} is NOT avaible on Binance! :x:")
 
         except (ValueError, TypeError):
             pass
-
 
     @commands.command(name='randomcoin')
     async def comm_randomcoin(self, ctx, cg=cg, top300coins=top300coins):
@@ -259,7 +259,6 @@ class CryptoCommands(commands.Cog):
         except (ValueError, TypeError):
             await ctx.send(f"Can not find requested crypto.")
 
-
     @commands.command(name='getcurr', aliases=['curr'])
     async def comm_getcurr(self, ctx, arg, coinlist=coinlist, cg=cg):
         print(f'{ctx.author} asked {ctx.command} with {ctx.args[1]}')
@@ -298,7 +297,8 @@ class CryptoCommands(commands.Cog):
             embed.add_field(name='Market cap', value=f"{marketcap} USD", inline=False)
 
             if coin['market_data']['total_supply']:
-                percentSupply = round((coin['market_data']['circulating_supply'] / coin['market_data']['total_supply']) * 100, 2)
+                percentSupply = round(
+                    (coin['market_data']['circulating_supply'] / coin['market_data']['total_supply']) * 100, 2)
                 embed.add_field(name='Circulating supply',
                                 value=f"{await localizeNB(int(coin['market_data']['circulating_supply']))} ({percentSupply}%)",
                                 inline=False)
@@ -313,7 +313,6 @@ class CryptoCommands(commands.Cog):
 
         except (ValueError, TypeError):
             await ctx.send(f"Can not find requested crypto.")
-
 
     @commands.command(name='getcurrmore', aliases=['more'])
     async def comm_getcurrmore(self, ctx, arg, coinlist=coinlist, cg=cg):
@@ -345,14 +344,14 @@ class CryptoCommands(commands.Cog):
             embed.add_field(name='\u200B', value='\u200B', inline=True)
             embed.add_field(name='7 days difference', value=round(coin['market_data']['price_change_percentage_7d'], 2),
                             inline=True)
-            embed.add_field(name='14 days difference', value=round(coin['market_data']['price_change_percentage_14d'], 2),
+            embed.add_field(name='14 days difference',
+                            value=round(coin['market_data']['price_change_percentage_14d'], 2),
                             inline=True)
             embed.add_field(name='\u200B', value='\u200B', inline=True)
 
             await ctx.send(embed=embed)
         except (ValueError, TypeError):
             await ctx.send(f"Can not find requested crypto.")
-
 
     @commands.command(name='kill')
     async def comm_kill(self, ctx, arg, coinlist=coinlist, cg=cg):
@@ -373,6 +372,7 @@ class CryptoCommands(commands.Cog):
             await ctx.send(msg)
         except (ValueError, TypeError):
             await ctx.send(f"Can not find requested crypto.")
+
 
 def setup(bot):
     bot.add_cog(CryptoCommands(bot))
