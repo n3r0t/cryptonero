@@ -3,12 +3,11 @@ import locale
 import discord
 from discord.ext import commands
 
-modules_list = ["fun","crypto"]
-
-locale.setlocale(locale.LC_ALL, 'en_US')
+modules_list = ["fun", "crypto"]
 
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix='*', description="crytponero",intents=intents)
+
+bot = commands.Bot(command_prefix='*', description="crytponero", intents=intents)
 
 @bot.event
 async def on_ready():

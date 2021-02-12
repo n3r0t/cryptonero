@@ -152,5 +152,6 @@ crashlytics-build.properties
 fabric.properties
 *.xml
 *.iml
-getid.py
+sandbox.py
 snip.txt
+logs.py
