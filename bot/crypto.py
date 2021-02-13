@@ -322,7 +322,7 @@ class CryptoCommands(commands.Cog):
         :param arg: the coin
         :return: Discord emebed
         """
-        logger.info(f'{ctx.author} asked {ctx.command} with {ctx.args[1]}')
+        logger.info(f'{ctx.author} asked {ctx.command} with {arg}')
         try:
             coin = self.get_coin_by_regex(arg)
 
@@ -368,7 +368,7 @@ class CryptoCommands(commands.Cog):
         except (ValueError, TypeError) as e:
             await ctx.send(f"{e}")
         except InvalidCoinID:
-            logger.warning(f"Wrong coin specified.")
+            logger.warning(f"Wrong coin specified ({arg})")
             await ctx.send(f"Can not find requested crypto.")
 
     @commands.command(name='getcurrmore', aliases=['more'])
@@ -379,7 +379,7 @@ class CryptoCommands(commands.Cog):
         :param arg: the coin
         :return: Discord embed
         """
-        logger.info(f'{ctx.author} asked {ctx.command} with {ctx.args[1]}')
+        logger.info(f'{ctx.author} asked {ctx.command} with {arg}')
         try:
             coin = self.get_coin_by_regex(arg)
 

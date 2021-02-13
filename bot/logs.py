@@ -5,7 +5,7 @@ def setup(module):
     logger = logging.getLogger(module)
     logger.setLevel(logging.DEBUG)
 
-    formatter = logging.Formatter('%(asctime)s | %(name)s | %(message)s')
+    formatter = logging.Formatter('%(levelname)s | %(asctime)s | %(name)s | %(message)s')
 
     file_handler = logging.FileHandler('bot.log')
     file_handler.setLevel(logging.WARNING)

@@ -9,7 +9,6 @@ modules_list = ["fun", "crypto"]
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='*', description="crytponero", intents=intents)
-print(logger)
 
 
 @bot.event
