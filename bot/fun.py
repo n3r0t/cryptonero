@@ -1,16 +1,20 @@
 # Fun commannds
-
 import random
 
 import discord
 from discord.ext import commands
+
+import logs
+
+logger = logs.setup("fun")
 
 
 class FunCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def isNerot(self, ctx):
+    @staticmethod
+    async def isNerot(ctx):
         if ctx.author.id != 131486383230550016:
             await ctx.send('Command not available')
             return False
@@ -19,7 +23,7 @@ class FunCommands(commands.Cog):
 
     @commands.command(name='sadge')
     async def fin_cest_sad_quoi(self, ctx, *arg):
-        print(f'{ctx.author} est Sadge')
+        logger.info(f'{ctx.author} est Sadge')
         await ctx.message.delete()
         msg = "'fin c'est sad quoi. . . "
         if arg:
@@ -32,7 +36,7 @@ class FunCommands(commands.Cog):
 
     @commands.command(name='menfou')
     async def menfou(self, ctx):
-        print(f"{ctx.author} s\'ENFOU")
+        logger.info(f"{ctx.author} S\'ENFOU")
         await ctx.message.delete()
         await ctx.send(content="MENFOU",
                        file=discord.File('menfou.png'))

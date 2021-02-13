@@ -7,9 +7,13 @@ import discord
 from discord.ext import commands
 from pycoingecko import CoinGeckoAPI
 
-import errors
+import logs
+from errors import *
+
+logger = logs.setup("crypto")
 
 locale.setlocale(locale.LC_ALL, 'en_US')
+
 
 class CryptoCommands(commands.Cog):
     def __init__(self, bot):
@@ -57,7 +61,7 @@ class CryptoCommands(commands.Cog):
                     return self.cg.get_coin_by_id(x['id'])
 
         if len(coin) == 0:
-            raise errors.InvalidCoinID
+            raise InvalidCoinID
 
     @commands.command(name='ath')
     async def comm_get_ath(self, ctx, arg):
@@ -67,7 +71,7 @@ class CryptoCommands(commands.Cog):
         :param arg: the coin
         :return: Discord embed
         """
-        print(f'{ctx.author} asked {ctx.command} with {ctx.args[1]}')
+        logger.info(f'{ctx.author} asked {ctx.command} with {arg}')
         try:
             coin = self.get_coin_by_regex(arg)
 
@@ -90,8 +94,11 @@ class CryptoCommands(commands.Cog):
 
             await ctx.send(embed=embed)
 
-        except (ValueError, TypeError, KeyError) as e:
+        except (ValueError, TypeError) as e:
             await ctx.send(f"{e}")
+        except InvalidCoinID:
+            logger.warning(f"Wrong coin specified.")
+            await ctx.send(f"Can not find requested crypto.")
 
     @commands.command(name='mcsim', aliases=['sim'])
     async def comm_get_mcsim(self, ctx, *args):
@@ -104,65 +111,71 @@ class CryptoCommands(commands.Cog):
         if len(args) != 2:
             await ctx.send("Not enough parameters provided (2 required).")
             return
-        print(f'{ctx.author} asked {ctx.command} with {args[0]}/{args[1]}')
+        logger.info(f'{ctx.author} asked {ctx.command} with {args[0]}/{args[1]}')
 
-        if not str(args[0]).isalpha():
-            await ctx.send("Parameter 1 has to be a string.")
-            return
-        if not self.isNumber(args[1]):
-            await ctx.send("Parameter 2 has to be number.")
-            return
+        try:
+            if not str(args[0]).isalpha():
+                await ctx.send("Parameter 1 has to be a string.")
+                return
+            if not self.isNumber(args[1]):
+                await ctx.send("Parameter 2 has to be number.")
+                return
 
-        coin = self.get_coin_by_regex(args[0])
+            coin = self.get_coin_by_regex(args[0])
 
-        embed = discord.Embed(
-            title=f"{coin['name']} simulated market cap (USD)",
-            color=discord.Color.blurple(),
-            url=f'https://www.coingecko.com/en/coins/{coin["id"]}'
-        )
+            embed = discord.Embed(
+                title=f"{coin['name']} simulated market cap (USD)",
+                color=discord.Color.blurple(),
+                url=f'https://www.coingecko.com/en/coins/{coin["id"]}'
+            )
 
-        wantedSimPrice = float(args[1])
+            wantedSimPrice = float(args[1])
 
-        mcSimmed = coin['market_data']['circulating_supply'] * wantedSimPrice
-        if coin['market_data']['total_supply']:
-            mcMaxSimmed = self.localizeNB(coin['market_data']['total_supply'] * wantedSimPrice)
-        else:
-            mcMaxSimmed = "infinite supply"
-        # marketcap = coin['market_data']['market_cap']['usd']
+            mcSimmed = coin['market_data']['circulating_supply'] * wantedSimPrice
+            if coin['market_data']['total_supply']:
+                mcMaxSimmed = self.localizeNB(coin['market_data']['total_supply'] * wantedSimPrice)
+            else:
+                mcMaxSimmed = "infinite supply"
+            # marketcap = coin['market_data']['market_cap']['usd']
 
-        leng = len(self.top300coins) - 1
-        estimatedRank = 301
-        while mcSimmed > self.top300coins[leng]['market_cap'] and leng > 0:
-            leng -= 1
-            estimatedRank = self.top300coins[leng]['market_cap_rank']
+            leng = len(self.top300coins) - 1
+            estimatedRank = 301
+            while mcSimmed > self.top300coins[leng]['market_cap'] and leng > 0:
+                leng -= 1
+                estimatedRank = self.top300coins[leng]['market_cap_rank']
 
-        if estimatedRank == 301:
-            estimatedRank = "300+"
+            if estimatedRank == 301:
+                estimatedRank = "300+"
 
-        currentPrice = coin['market_data']['current_price']['usd']
+            currentPrice = coin['market_data']['current_price']['usd']
 
-        currentPrice = round(currentPrice, 6) if currentPrice < 10 else self.localizeNB(currentPrice)
+            currentPrice = round(currentPrice, 6) if currentPrice < 10 else self.localizeNB(currentPrice)
 
-        simmedprice = round(wantedSimPrice, 6) if wantedSimPrice < 10 else self.localizeNB(wantedSimPrice)
+            simmedprice = round(wantedSimPrice, 6) if wantedSimPrice < 10 else self.localizeNB(wantedSimPrice)
 
-        marketcap = self.localizeNB(coin['market_data']['market_cap']['usd'])
+            marketcap = self.localizeNB(coin['market_data']['market_cap']['usd'])
 
-        mcSimmed = self.localizeNB(mcSimmed)
+            mcSimmed = self.localizeNB(mcSimmed)
 
-        embed.set_thumbnail(url=coin['image']['small'])
-        embed.add_field(name='Current price', value=f"{currentPrice}",
-                        inline=True)
-        embed.add_field(name='Current market cap', value=f"{marketcap}", inline=True)
-        embed.add_field(name='_ _', value='_ _', inline=True)
-        embed.add_field(name='Simulated price', value=f"{simmedprice}", inline=True)
-        embed.add_field(name='Simulated market cap', value=f"{mcSimmed}", inline=True)
-        embed.add_field(name='_ _', value='_ _', inline=True)
-        embed.add_field(name='Simulated market cap with max supply', value=f"{mcMaxSimmed}", inline=False)
-        embed.add_field(name='Simulated market cap rank', value=f"{estimatedRank}", inline=False)
+            embed.set_thumbnail(url=coin['image']['small'])
+            embed.add_field(name='Current price', value=f"{currentPrice}", inline=True)
+            embed.add_field(name='Current market cap', value=f"{marketcap}", inline=True)
+            embed.add_field(name='_ _', value='_ _', inline=True)
+            embed.add_field(name='Simulated price', value=f"{simmedprice}", inline=True)
+            embed.add_field(name='Simulated market cap', value=f"{mcSimmed}", inline=True)
+            embed.add_field(name='_ _', value='_ _', inline=True)
+            embed.add_field(name='Simulated market cap with max supply', value=f"{mcMaxSimmed}", inline=False)
+            embed.add_field(name='Simulated market cap rank', value=f"{estimatedRank}", inline=False)
 
-        embed.set_footer(text=f'Powered by coingecko.com')
+            embed.set_footer(text=f'Powered by coingecko.com')
 
-        await ctx.send(embed=embed)
+            await ctx.send(embed=embed)
+
+        except (ValueError, TypeError) as e:
+            await ctx.send(f"{e}")
+        except InvalidCoinID:
+            logger.warning(f"Wrong coin specified.")
+            await ctx.send(f"Can not find requested crypto.")
 
     @commands.command(name='trending')
     async def comm_get_trending(self, ctx):
@@ -171,7 +184,7 @@ class CryptoCommands(commands.Cog):
         :param ctx: Discord context
         :return: Discord embed
         """
-        print(f'{ctx.author} asked {ctx.command}')
+        logger.info(f'{ctx.author} asked {ctx.command}')
         try:
             trending = self.cg.get_search_trending()
 
@@ -203,8 +216,11 @@ class CryptoCommands(commands.Cog):
 
             await ctx.send(embed=embed)
 
-        except (ValueError, TypeError, KeyError) as e:
+        except (ValueError, TypeError) as e:
             await ctx.send(f"{e}")
+        except InvalidCoinID:
+            logger.warning(f"Wrong coin specified.")
+            await ctx.send(f"Can not find requested crypto.")
 
     @commands.command(name='binance')
     async def comm_get_binance(self, ctx, arg):
@@ -214,7 +230,7 @@ class CryptoCommands(commands.Cog):
         :param arg: the coin
         :return: Discord embed
         """
-        print(f'{ctx.author} asked {ctx.command}')
+        logger.info(f'{ctx.author} asked {ctx.command}')
         try:
             coin = self.get_coin_by_regex(arg)
 
@@ -229,8 +245,11 @@ class CryptoCommands(commands.Cog):
             else:
                 await ctx.send(f"{coin['name']} is NOT avaible on Binance! :x:")
 
-        except (ValueError, TypeError):
-            pass
+        except (ValueError, TypeError) as e:
+            await ctx.send(f"{e}")
+        except InvalidCoinID:
+            logger.warning(f"Wrong coin specified.")
+            await ctx.send(f"Can not find requested crypto.")
 
     @commands.command(name='randomcoin')
     async def comm_randomcoin(self, ctx):
@@ -240,7 +259,7 @@ class CryptoCommands(commands.Cog):
         :param ctx: Discord context
         :return: Discord embed
         """
-        print(f'{ctx.author} asked {ctx.command}')
+        logger.info(f'{ctx.author} asked {ctx.command}')
         try:
             temp = discord.Embed(
                 title='Please wait while I find the next Moon shot :rocket::full_moon_with_face:',
@@ -288,7 +307,11 @@ class CryptoCommands(commands.Cog):
             embed.set_thumbnail(url=coin['image']['small'])
             embed.set_footer(text=f'Powered by coingecko.com')
             await msg.edit(content=None, embed=embed)
-        except (ValueError, TypeError):
+
+        except (ValueError, TypeError) as e:
+            await ctx.send(f"{e}")
+        except InvalidCoinID:
+            logger.warning(f"Wrong coin specified.")
             await ctx.send(f"Can not find requested crypto.")
 
     @commands.command(name='getcurr', aliases=['curr'])
@@ -299,7 +322,7 @@ class CryptoCommands(commands.Cog):
         :param arg: the coin
         :return: Discord emebed
         """
-        print(f'{ctx.author} asked {ctx.command} with {ctx.args[1]}')
+        logger.info(f'{ctx.author} asked {ctx.command} with {ctx.args[1]}')
         try:
             coin = self.get_coin_by_regex(arg)
 
@@ -342,7 +365,10 @@ class CryptoCommands(commands.Cog):
 
             await ctx.send(embed=embed)
 
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as e:
+            await ctx.send(f"{e}")
+        except InvalidCoinID:
+            logger.warning(f"Wrong coin specified.")
             await ctx.send(f"Can not find requested crypto.")
 
     @commands.command(name='getcurrmore', aliases=['more'])
@@ -353,7 +379,7 @@ class CryptoCommands(commands.Cog):
         :param arg: the coin
         :return: Discord embed
         """
-        print(f'{ctx.author} asked {ctx.command} with {ctx.args[1]}')
+        logger.info(f'{ctx.author} asked {ctx.command} with {ctx.args[1]}')
         try:
             coin = self.get_coin_by_regex(arg)
 
@@ -379,7 +405,11 @@ class CryptoCommands(commands.Cog):
             embed.add_field(name='\u200B', value='\u200B', inline=True)
 
             await ctx.send(embed=embed)
-        except (ValueError, TypeError):
+
+        except (ValueError, TypeError) as e:
+            await ctx.send(f"{e}")
+        except InvalidCoinID:
+            logger.warning(f"Wrong coin specified.")
             await ctx.send(f"Can not find requested crypto.")
 
     @commands.command(name='kill')
@@ -390,13 +420,17 @@ class CryptoCommands(commands.Cog):
         :param arg: the coin
         :return: Discord message
         """
+        logger.info(f'{ctx.author} asked {ctx.message} with {arg}')
         try:
             coin = self.get_coin_by_regex(arg)
 
             excla = "!" * random.randrange(2, 12)
             msg = f"{coin['name']} has been killed{excla}"
             await ctx.send(msg)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as e:
+            await ctx.send(f"{e}")
+        except InvalidCoinID:
+            logger.warning(f"Wrong coin specified.")
             await ctx.send(f"Can not find requested crypto.")
 
 
