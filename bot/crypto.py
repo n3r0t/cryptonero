@@ -28,10 +28,12 @@ class CryptoCommands(commands.Cog):
     @staticmethod
     def isNumber(arg):
         """
-        Check if the argument is a number.
+        Check if the argument is a number (different from isnumeric() builtin method)
         :param arg: the number to check.
         :return: True if the arg is a number. Else False.
         """
+        if arg == "nan":  # float() considers "nan" is a number
+            return False  # but i dont want it.
         try:
             float(arg)
             return True
@@ -51,7 +53,7 @@ class CryptoCommands(commands.Cog):
         """
         Search the id or name or symbol in the list of coins provided by the API.
         :param arg: the string to search.
-        :return:  either a list or raise an error if the querry provided by the user is invalid.
+        :return:  either a list or raise an error if the query provided by the user is invalid.
         """
         coin = {}
         for x in self.coinlist:
@@ -95,7 +97,8 @@ class CryptoCommands(commands.Cog):
             await ctx.send(embed=embed)
 
         except (ValueError, TypeError) as e:
-            await ctx.send(f"{e}")
+            logger.warning(e)
+            await ctx.send(e)
         except InvalidCoinID:
             logger.warning(f"Wrong coin specified.")
             await ctx.send(f"Can not find requested crypto.")
@@ -172,7 +175,8 @@ class CryptoCommands(commands.Cog):
             await ctx.send(embed=embed)
 
         except (ValueError, TypeError) as e:
-            await ctx.send(f"{e}")
+            logger.warning(e)
+            await ctx.send(e)
         except InvalidCoinID:
             logger.warning(f"Wrong coin specified.")
             await ctx.send(f"Can not find requested crypto.")
@@ -180,7 +184,7 @@ class CryptoCommands(commands.Cog):
     @commands.command(name='trending')
     async def comm_get_trending(self, ctx):
         """
-        Return the trending coin on CoinGecko
+        Return the seven trending coins on CoinGecko
         :param ctx: Discord context
         :return: Discord embed
         """
@@ -217,7 +221,8 @@ class CryptoCommands(commands.Cog):
             await ctx.send(embed=embed)
 
         except (ValueError, TypeError) as e:
-            await ctx.send(f"{e}")
+            logger.warning(e)
+            await ctx.send(e)
         except InvalidCoinID:
             logger.warning(f"Wrong coin specified.")
             await ctx.send(f"Can not find requested crypto.")
@@ -246,7 +251,8 @@ class CryptoCommands(commands.Cog):
                 await ctx.send(f"{coin['name']} is NOT avaible on Binance! :x:")
 
         except (ValueError, TypeError) as e:
-            await ctx.send(f"{e}")
+            logger.warning(e)
+            await ctx.send(e)
         except InvalidCoinID:
             logger.warning(f"Wrong coin specified.")
             await ctx.send(f"Can not find requested crypto.")
@@ -309,7 +315,8 @@ class CryptoCommands(commands.Cog):
             await msg.edit(content=None, embed=embed)
 
         except (ValueError, TypeError) as e:
-            await ctx.send(f"{e}")
+            logger.warning(e)
+            await ctx.send(e)
         except InvalidCoinID:
             logger.warning(f"Wrong coin specified.")
             await ctx.send(f"Can not find requested crypto.")
@@ -366,7 +373,8 @@ class CryptoCommands(commands.Cog):
             await ctx.send(embed=embed)
 
         except (ValueError, TypeError) as e:
-            await ctx.send(f"{e}")
+            logger.warning(e)
+            await ctx.send(e)
         except InvalidCoinID:
             logger.warning(f"Wrong coin specified ({arg})")
             await ctx.send(f"Can not find requested crypto.")
@@ -407,7 +415,8 @@ class CryptoCommands(commands.Cog):
             await ctx.send(embed=embed)
 
         except (ValueError, TypeError) as e:
-            await ctx.send(f"{e}")
+            logger.warning(e)
+            await ctx.send(e)
         except InvalidCoinID:
             logger.warning(f"Wrong coin specified.")
             await ctx.send(f"Can not find requested crypto.")
@@ -428,7 +437,8 @@ class CryptoCommands(commands.Cog):
             msg = f"{coin['name']} has been killed{excla}"
             await ctx.send(msg)
         except (ValueError, TypeError) as e:
-            await ctx.send(f"{e}")
+            logger.warning(e)
+            await ctx.send(e)
         except InvalidCoinID:
             logger.warning(f"Wrong coin specified.")
             await ctx.send(f"Can not find requested crypto.")
