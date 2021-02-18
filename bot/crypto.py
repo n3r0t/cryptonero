@@ -55,15 +55,13 @@ class CryptoCommands(commands.Cog):
         :param arg: the string to search.
         :return:  either a list or raise an error if the query provided by the user is invalid.
         """
-        coin = {}
-        for x in self.coinlist:
-            for s in x.values():
-                r = re.search(f'(?<!\S){arg}(?!\S)', s)
+        for coin in self.coinlist:
+            for coin_names in coin.values():
+                r = re.search(f'(?<!\S){arg}(?!\S)', coin_names)
                 if r is not None:
-                    return self.cg.get_coin_by_id(x['id'])
+                    return self.cg.get_coin_by_id(coin['id'])
 
-        if len(coin) == 0:
-            raise InvalidCoinID
+        raise InvalidCoinID  # Will raise exception if arg is not found in the list
 
     @commands.command(name='ath')
     async def comm_get_ath(self, ctx, arg):
@@ -163,10 +161,10 @@ class CryptoCommands(commands.Cog):
             embed.set_thumbnail(url=coin['image']['small'])
             embed.add_field(name='Current price', value=f"{currentPrice}", inline=True)
             embed.add_field(name='Current market cap', value=f"{marketcap}", inline=True)
-            embed.add_field(name='_ _', value='_ _', inline=True)
+            embed.add_field(name='\u200B', value='\u200B', inline=True)
             embed.add_field(name='Simulated price', value=f"{simmedprice}", inline=True)
             embed.add_field(name='Simulated market cap', value=f"{mcSimmed}", inline=True)
-            embed.add_field(name='_ _', value='_ _', inline=True)
+            embed.add_field(name='\u200B', value='\u200B', inline=True)
             embed.add_field(name='Simulated market cap with max supply', value=f"{mcMaxSimmed}", inline=False)
             embed.add_field(name='Simulated market cap rank', value=f"{estimatedRank}", inline=False)
 
@@ -203,18 +201,15 @@ class CryptoCommands(commands.Cog):
             for coin in trending['coins']:
                 listcoins.append(coin['item']['id'])
 
-            for name, prices in self.cg.get_price(ids=listcoins, vs_currencies=['eur', 'usd'],
+            for name, prices in self.cg.get_price(ids=listcoins, vs_currencies=['usd'],
                                                   include_24hr_change='true').items():
                 top7_dict[name] = prices
 
             for coin in trending['coins']:
                 embed.add_field(name=f"Top {coin['item']['score'] + 1}", value=coin['item']['name'], inline=True)
-                embed.add_field(name=f"EUR",
-                                value=f"{round(top7_dict[coin['item']['id']]['eur'], 2)} ({round(top7_dict[coin['item']['id']]['eur_24h_change'], 2)}%)",
-                                inline=True)
-                embed.add_field(name=f"USD",
-                                value=f"{round(top7_dict[coin['item']['id']]['usd'], 2)} ({round(top7_dict[coin['item']['id']]['usd_24h_change'], 2)}%)",
-                                inline=True)
+                embed.add_field(name=f"Value", value=f"{round(top7_dict[coin['item']['id']]['usd'], 5)}", inline=True)
+                embed.add_field(name=f"24h change",
+                                value=f"{round(top7_dict[coin['item']['id']]['usd_24h_change'], 2)}%", inline=True)
 
             embed.set_footer(text=f'Powered by coingecko.com')
 
@@ -298,20 +293,19 @@ class CryptoCommands(commands.Cog):
                 url=f'https://www.coingecko.com/en/coins/{coin["id"]}'
             )
 
-            embed.add_field(name='Available with USDT', value='Yes :white_check_mark:')
-            embed.add_field(name='Available on Binance', value='Yes :white_check_mark:')
+            marketcap = self.localizeNB(coin['market_data']['market_cap']['usd'])
 
+            embed.add_field(name='Available with USDT', value='Yes :white_check_mark:', inline=True)
+            embed.add_field(name='Available on Binance', value='Yes :white_check_mark:', inline=True)
             embed.add_field(name='\u200B', value='\u200B', inline=True)
 
-            marketcap = await self.localizeNB(coin['market_data']['market_cap']['usd'])
             embed.add_field(name='Market cap', value=f"{marketcap} USD", inline=True)
-
             embed.add_field(name='USD price', value=coin['market_data']['current_price']['usd'], inline=True)
 
-            embed.add_field(name='\u200B', value='\u200B', inline=True)
-
             embed.set_thumbnail(url=coin['image']['small'])
+
             embed.set_footer(text=f'Powered by coingecko.com')
+
             await msg.edit(content=None, embed=embed)
 
         except (ValueError, TypeError) as e:
@@ -348,32 +342,27 @@ class CryptoCommands(commands.Cog):
                 url=f'https://www.coingecko.com/en/coins/{coin["id"]}'
             )
 
-            marketcap = await self.localizeNB(coin['market_data']['market_cap']['usd'])
+            marketcap = self.localizeNB(coin['market_data']['market_cap']['usd'])
+
+            circulating_supply = self.localizeNB(coin['market_data']['circulating_supply'])
+            if coin['market_data']['total_supply']:
+                percentSupply = round(
+                    (coin['market_data']['circulating_supply'] / coin['market_data']['total_supply']) * 100, 2)
+                circulating_supply = f"{circulating_supply} ({percentSupply}%)"
 
             embed.set_thumbnail(url=coin['image']['small'])
             embed.add_field(name='USD', value=coin['market_data']['current_price']['usd'], inline=True)
             embed.add_field(name='EUR', value=coin['market_data']['current_price']['eur'], inline=True)
-            embed.add_field(name='24h difference', value=f"{diff}", inline=False)
+            embed.add_field(name='24h difference', value=diff, inline=False)
             embed.add_field(name='Market cap', value=f"{marketcap} USD", inline=False)
-
-            # Check if coin have limited supply
-            if coin['market_data']['total_supply']:
-                percentSupply = round(
-                    (coin['market_data']['circulating_supply'] / coin['market_data']['total_supply']) * 100, 2)
-                embed.add_field(name='Circulating supply',
-                                value=f"{await self.localizeNB(int(coin['market_data']['circulating_supply']))} ({percentSupply}%)",
-                                inline=False)
-            else:
-                embed.add_field(name='Circulating supply',
-                                value=f"{await self.localizeNB(int(coin['market_data']['circulating_supply']))}",
-                                inline=False)
+            embed.add_field(name='Circulating supply', value=f"{circulating_supply}", inline=False)
 
             embed.set_footer(text=f'Powered by coingecko.com')
 
             await ctx.send(embed=embed)
 
         except (ValueError, TypeError) as e:
-            logger.warning(e)
+            logger.exception(e)
             await ctx.send(e)
         except InvalidCoinID:
             logger.warning(f"Wrong coin specified ({arg})")
