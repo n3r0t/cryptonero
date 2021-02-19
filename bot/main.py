@@ -14,8 +14,6 @@ bot = commands.Bot(command_prefix='*', description="crytponero", intents=intents
 @bot.event
 async def on_ready():
     logger.info(f'Logged in as {bot.user} ({bot.user.id})\n------------')
-    # if coinlist:
-    #     print(f'total coins: {len(coinlist)}')
 
 
 if __name__ == "__main__":
