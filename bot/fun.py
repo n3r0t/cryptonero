@@ -55,6 +55,10 @@ class FunCommands(commands.Cog):
             except (ValueError, TypeError):
                 pass
 
+    @commands.command(name='source')
+    async def comm_source(self, ctx):
+        await ctx.send("https://github.com/n3r0t/cryptonero")
+
 
 def setup(bot):
     bot.add_cog(FunCommands(bot))

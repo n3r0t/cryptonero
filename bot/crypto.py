@@ -188,28 +188,37 @@ class CryptoCommands(commands.Cog):
         """
         logger.info(f'{ctx.author} asked {ctx.command}')
         try:
-            trending = self.cg.get_search_trending()
+            trending = self.cg.get_search_trending()['coins']
+
+            def text_with_url(text, link):
+                return f"[{text}](https://www.coingecko.com/en/coins/{link})"
 
             embed = discord.Embed(
-                title="Top 7 trending coin in the last 24h 📈",
+                title="Top 7 trending coin in the last 24h",
                 color=discord.Color.blurple()
             )
 
             listcoins = []
             top7_dict = {}
 
-            for coin in trending['coins']:
+            for coin in trending:
                 listcoins.append(coin['item']['id'])
 
-            for name, prices in self.cg.get_price(ids=listcoins, vs_currencies=['usd'],
-                                                  include_24hr_change='true').items():
+            # Because Coingecko's get_search_trending() doesn't return prices we have to get them ourselves
+            clist = self.cg.get_price(ids=listcoins, vs_currencies=['usd'], include_24hr_change='true').items()
+            for name, prices in clist:
                 top7_dict[name] = prices
 
-            for coin in trending['coins']:
-                embed.add_field(name=f"Top {coin['item']['score'] + 1}", value=coin['item']['name'], inline=True)
-                embed.add_field(name=f"Value", value=f"{round(top7_dict[coin['item']['id']]['usd'], 5)}", inline=True)
+            for coin in trending:
+                embed.add_field(name=f"Top {coin['item']['score'] + 1}",
+                                value=text_with_url(coin['item']['name'], coin['item']['id']),
+                                inline=True)
+                embed.add_field(name=f"Value",
+                                value=f"{round(top7_dict[coin['item']['id']]['usd'], 5)}",
+                                inline=True)
                 embed.add_field(name=f"24h change",
-                                value=f"{round(top7_dict[coin['item']['id']]['usd_24h_change'], 2)}%", inline=True)
+                                value=f"{round(top7_dict[coin['item']['id']]['usd_24h_change'], 2)}%",
+                                inline=True)
 
             embed.set_footer(text=f'Powered by coingecko.com')
 
@@ -354,7 +363,8 @@ class CryptoCommands(commands.Cog):
             embed.add_field(name='USD', value=coin['market_data']['current_price']['usd'], inline=True)
             embed.add_field(name='EUR', value=coin['market_data']['current_price']['eur'], inline=True)
             embed.add_field(name='24h difference', value=diff, inline=False)
-            embed.add_field(name='Market cap', value=f"{marketcap} USD", inline=False)
+            embed.add_field(name='Market cap (#rank)', value=f"{marketcap} USD (#{coin['market_cap_rank']})",
+                            inline=False)
             embed.add_field(name='Circulating supply', value=f"{circulating_supply}", inline=False)
 
             embed.set_footer(text=f'Powered by coingecko.com')
@@ -410,6 +420,50 @@ class CryptoCommands(commands.Cog):
             logger.warning(f"Wrong coin specified.")
             await ctx.send(f"Can not find requested crypto.")
 
+    @commands.command(name='top10', aliases=['top'])
+    async def get_top10(self, ctx):
+        logger.info(f'{ctx.author} asked {ctx.command}')
+
+        top5 = self.cg.get_coins_markets('usd', per_page=5)
+        top10 = self.cg.get_coins_markets('usd', per_page=5, page=2)
+
+        def text_with_url(text, cid):
+            return f"[{text}](https://www.coingecko.com/en/coins/{cid})"
+
+        embed = discord.Embed(
+            title="Top 10 market cap (1/2)",
+            color=discord.Color.blurple(),
+        )
+
+        embed2 = discord.Embed(
+            title="Top 10 market cap (2/2)",
+            color=discord.Color.blurple(),
+        )
+
+        for coin in top5:
+            embed.add_field(name=f"Top {coin['market_cap_rank']}",
+                            value=text_with_url(coin['name'], coin['id']),
+                            inline=True)
+            embed.add_field(name=f"Value",
+                            value=f"{round(coin['current_price'], 5)}",
+                            inline=True)
+            embed.add_field(name=f"24h change",
+                            value=f"{round(coin['price_change_percentage_24h'], 2)}%",
+                            inline=True)
+        await ctx.send(embed=embed)
+
+        for coin in top10:
+            embed2.add_field(name=f"Top {coin['market_cap_rank']}",
+                             value=text_with_url(coin['name'], coin['id']),
+                             inline=True)
+            embed2.add_field(name=f"Value",
+                             value=f"{round(coin['current_price'], 5)}",
+                             inline=True)
+            embed2.add_field(name=f"24h change",
+                             value=f"{round(coin['price_change_percentage_24h'], 2)}%",
+                             inline=True)
+        await ctx.send(embed=embed2)
+
     @commands.command(name='kill')
     async def comm_kill(self, ctx, arg):
         """
@@ -419,6 +473,7 @@ class CryptoCommands(commands.Cog):
         :return: Discord message
         """
         logger.info(f'{ctx.author} asked {ctx.message} with {arg}')
+
         try:
             coin = self.get_coin_by_regex(arg)
 
